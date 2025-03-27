@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>It's 5 O'Clock Somewhere</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2b6cb0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #38a169;
+            font-size: 1.5rem;
+        }
+        .current-time {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .current-time span {
+            font-weight: 600;
+        }
+        .countdown {
+            margin-top: 8px;
+            font-size: 1.1rem;
+            color: #3182ce;
+            font-weight: 500;
+        }
+        .locations-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .location-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .location-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .location-indicator {
+            height: 12px;
+            width: 12px;
+            background-color: #48bb78;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .location-name {
+            font-weight: 500;
+        }
+        .location-offset {
+            margin-left: 8px;
+            color: #718096;
+        }
+        .map-placeholder {
+            background-color: white;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .footer-note {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #718096;
+            margin-top: 20px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .legend-indicator {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>It's 5 O'Clock Somewhere</h1>
+        
+        <div class="current-time">
+            Current time: <span id="current-time">Loading...</span>
+            <div id="five-oclock-countdown" class="countdown">Calculating time until 5 PM in your timezone...</div>
+        </div>
+        
+        <div class="locations-container">
+            <h2>Places where it's currently near 5 PM (4:00-6:00):</h2>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-indicator" style="background-color: #22c55e;"></div>
+                    <span>Exactly 5:00 PM</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-indicator" style="background-color: #84cc16;"></div>
+                    <span>Within 15 min of 5:00 PM</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-indicator" style="background-color: #fbbf24;"></div>
+                    <span>Approaching 5:00 PM</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-indicator" style="background-color: #f97316;"></div>
+                    <span>Just past 5:00 PM</span>
+                </div>
+            </div>
+            
+            <ul id="five-oclock-locations" class="location-list">
+                <li>Calculating locations...</li>
+            </ul>
+        </div>
+        
+        <div class="map-placeholder">
+            <h2>World Map Visualization Coming Soon</h2>
+            <p>A map visualization showing the current "5 o'clock line" moving across the globe would be displayed here.</p>
+        </div>
+        
+        <p class="footer-note">
+            Note: This is an approximation based on standard time zones. Some regions may observe different local times due to daylight saving time or regional variations.
+        </p>
+    </div>
+
+    <script>
+        // Timezone offsets database
+        const timezoneOffsets = [
+            { offset: -12, regions: ["Baker Island, Howland Island (uninhabited US territories)"] },
+            { offset: -11, regions: ["American Samoa, Niue"] },
+            { offset: -10, regions: ["Hawaii, Tahiti, Cook Islands"] },
+            { offset: -9.5, regions: ["Marquesas Islands"] },
+            { offset: -9, regions: ["Alaska, Gambier Islands"] },
+            { offset: -8, regions: ["Pacific Time (US & Canada), Tijuana"] },
+            { offset: -7, regions: ["Mountain Time (US & Canada), Arizona"] },
+            { offset: -6, regions: ["Central Time (US & Canada), Mexico City"] },
+            { offset: -5, regions: ["Eastern Time (US & Canada), Bogota, Lima"] },
+            { offset: -4, regions: ["Atlantic Time (Canada), Caracas, La Paz"] },
+            { offset: -3.5, regions: ["Newfoundland"] },
+            { offset: -3, regions: ["Buenos Aires, Montevideo, Brasilia"] },
+            { offset: -2, regions: ["Mid-Atlantic, South Georgia"] },
+            { offset: -1, regions: ["Azores, Cape Verde"] },
+            { offset: 0, regions: ["London, Dublin, Lisbon, Casablanca"] },
+            { offset: 1, regions: ["Berlin, Paris, Rome, Madrid, Warsaw"] },
+            { offset: 2, regions: ["Athens, Istanbul, Cairo, Johannesburg"] },
+            { offset: 3, regions: ["Moscow, Baghdad, Nairobi"] },
+            { offset: 3.5, regions: ["Tehran"] },
+            { offset: 4, regions: ["Dubai, Baku, Tbilisi"] },
+            { offset: 4.5, regions: ["Kabul"] },
+            { offset: 5, regions: ["Karachi, Tashkent"] },
+            { offset: 5.5, regions: ["Mumbai, New Delhi, Colombo"] },
+            { offset: 5.75, regions: ["Kathmandu"] },
+            { offset: 6, regions: ["Dhaka, Almaty"] },
+            { offset: 6.5, regions: ["Yangon, Cocos Islands"] },
+            { offset: 7, regions: ["Bangkok, Jakarta, Hanoi"] },
+            { offset: 8, regions: ["Beijing, Hong Kong, Singapore, Manila"] },
+            { offset: 9, regions: ["Tokyo, Seoul, Pyongyang"] },
+            { offset: 9.5, regions: ["Adelaide, Darwin"] },
+            { offset: 10, regions: ["Sydney, Melbourne, Brisbane"] },
+            { offset: 11, regions: ["Noumea, Solomon Islands"] },
+            { offset: 12, regions: ["Auckland, Fiji, Marshall Islands"] },
+            { offset: 13, regions: ["Samoa, Tonga"] },
+            { offset: 14, regions: ["Line Islands, Kiribati"] }
+        ];
+
+        // Update the current time display
+        function updateCurrentTime() {
+            const now = new Date();
+            const formattedTime = now.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            document.getElementById('current-time').textContent = formattedTime;
+            return now;
+        }
+
+        // Calculate and display locations where it's near 5 PM (4:00-6:00 window)
+        function calculateFiveOClockLocations(currentTime) {
+            // Get the current UTC hour and minutes
+            const utcHour = currentTime.getUTCHours();
+            const utcMinutes = currentTime.getUTCMinutes();
+            
+            // Convert current UTC time to minutes since midnight
+            const utcTotalMinutes = utcHour * 60 + utcMinutes;
+            
+            // Function to calculate local time at a given offset
+            function getLocalTimeAtOffset(offsetHours) {
+                // Convert offset to minutes
+                const offsetMinutes = offsetHours * 60;
+                
+                // Calculate local total minutes (handling day wrapping)
+                const localTotalMinutes = (utcTotalMinutes + offsetMinutes + 24 * 60) % (24 * 60);
+                
+                // Convert back to hours and minutes
+                const localHours = Math.floor(localTotalMinutes / 60);
+                const localMinutes = localTotalMinutes % 60;
+                
+                return { hours: localHours, minutes: localMinutes, totalMinutes: localTotalMinutes };
+            }
+            
+            // Find locations within the 4:00-6:00 PM window
+            let matchingLocations = [];
+            
+            // Target time is 5:00 PM (17:00) in minutes since midnight
+            const targetTime = 17 * 60;
+            
+            // Define our time window (4:00 PM to 6:00 PM)
+            const windowStart = 16 * 60; // 4:00 PM
+            const windowEnd = 18 * 60;   // 6:00 PM
+            
+            // Group matches by how close they are to exactly 5 PM
+            const exactMatches = [];
+            const closeMatches = [];
+            const approachingMatches = [];
+            const pastMatches = [];
+            
+            timezoneOffsets.forEach(tz => {
+                const localTime = getLocalTimeAtOffset(tz.offset);
+                
+                // Check if the local time is within our window
+                if (localTime.totalMinutes >= windowStart && localTime.totalMinutes <= windowEnd) {
+                    // Calculate how close to 5:00 PM
+                    const minutesFromTarget = Math.abs(localTime.totalMinutes - targetTime);
+                    
+                    // Add time info to the timezone object
+                    const timeInfo = {
+                        ...tz,
+                        localHours: localTime.hours,
+                        localMinutes: localTime.minutes,
+                        minutesFromTarget: minutesFromTarget
+                    };
+                    
+                    // Categorize by proximity to 5:00 PM
+                    if (minutesFromTarget === 0) {
+                        exactMatches.push(timeInfo);
+                    } else if (minutesFromTarget <= 15) {
+                        closeMatches.push(timeInfo);
+                    } else if (localTime.totalMinutes < targetTime) {
+                        approachingMatches.push(timeInfo);
+                    } else {
+                        pastMatches.push(timeInfo);
+                    }
+                }
+            });
+            
+            // Sort each category by how close they are to 5:00 PM
+            const sortByProximity = (a, b) => a.minutesFromTarget - b.minutesFromTarget;
+            
+            closeMatches.sort(sortByProximity);
+            approachingMatches.sort(sortByProximity);
+            pastMatches.sort(sortByProximity);
+            
+            // Combine all matches, prioritizing exact matches
+            matchingLocations = [
+                ...exactMatches, 
+                ...closeMatches,
+                ...approachingMatches,
+                ...pastMatches
+            ];
+            
+            // Display the matching locations
+            const locationsContainer = document.getElementById('five-oclock-locations');
+            
+            if (matchingLocations.length > 0) {
+                locationsContainer.innerHTML = '';
+                
+                matchingLocations.forEach(location => {
+                    location.regions.forEach(region => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'location-item';
+                        
+                        // Determine indicator color based on proximity to 5:00 PM
+                        const indicator = document.createElement('div');
+                        indicator.className = 'location-indicator';
+                        
+                        // Format the local time
+                        const localTimeFormatted = `${location.localHours % 12 || 12}:${String(location.localMinutes).padStart(2, '0')} ${location.localHours >= 12 ? 'PM' : 'AM'}`;
+                        
+                        // Set indicator color based on how close to 5:00 PM
+                        if (location.minutesFromTarget === 0) {
+                            // Exactly 5:00 PM
+                            indicator.style.backgroundColor = '#22c55e'; // Bright green
+                        } else if (location.minutesFromTarget <= 15) {
+                            // Within 15 minutes
+                            indicator.style.backgroundColor = '#84cc16'; // Light green
+                        } else if (location.localHours * 60 + location.localMinutes < 17 * 60) {
+                            // Approaching 5:00 PM (before)
+                            indicator.style.backgroundColor = '#fbbf24'; // Yellow
+                        } else {
+                            // Past 5:00 PM
+                            indicator.style.backgroundColor = '#f97316'; // Orange
+                        }
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'location-name';
+                        nameSpan.textContent = region;
+                        
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'location-time';
+                        timeSpan.textContent = localTimeFormatted;
+                        timeSpan.style.marginLeft = '8px';
+                        timeSpan.style.fontWeight = '600';
+                        
+                        const offsetSpan = document.createElement('span');
+                        offsetSpan.className = 'location-offset';
+                        offsetSpan.textContent = `(UTC ${location.offset >= 0 ? '+' : ''}${location.offset})`;
+                        
+                        listItem.appendChild(indicator);
+                        listItem.appendChild(nameSpan);
+                        listItem.appendChild(timeSpan);
+                        listItem.appendChild(offsetSpan);
+                        
+                        locationsContainer.appendChild(listItem);
+                    });
+                });
+            } else {
+                locationsContainer.innerHTML = '<li>No locations found where it\'s currently near 5 PM.</li>';
+            }
+        }
+
+        // Calculate and display time until 5 PM in user's local timezone
+        function updateCountdownToFivePM() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentSecond = now.getSeconds();
+            
+            // Calculate when the next 5 PM will occur
+            let targetDate = new Date();
+            targetDate.setHours(17, 0, 0, 0); // Set to 5:00:00.000 PM
+            
+            // If it's already past 5 PM today, set target to tomorrow at 5 PM
+            if (currentHour > 17 || (currentHour === 17 && currentMinute > 0)) {
+                targetDate.setDate(targetDate.getDate() + 1);
+            }
+            
+            // Calculate time difference in milliseconds
+            const timeDifference = targetDate - now;
+            
+            // Convert to hours, minutes, seconds
+            const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+            
+            // Format countdown text based on time remaining
+            let countdownText = '';
+            
+            if (hours === 0 && minutes === 0 && seconds === 0) {
+                countdownText = "It's 5 PM in your timezone right now!";
+            } else {
+                countdownText = "Time until 5 PM in your timezone: ";
+                
+                if (hours > 0) {
+                    countdownText += `${hours} hour${hours !== 1 ? 's' : ''}`;
+                    
+                    if (minutes > 0 || seconds > 0) {
+                        countdownText += ', ';
+                    }
+                }
+                
+                if (minutes > 0) {
+                    countdownText += `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+                    
+                    if (seconds > 0) {
+                        countdownText += ', ';
+                    }
+                }
+                
+                if (seconds > 0 || (hours === 0 && minutes === 0)) {
+                    countdownText += `${seconds} second${seconds !== 1 ? 's' : ''}`;
+                }
+            }
+            
+            // Update the countdown display
+            document.getElementById('five-oclock-countdown').textContent = countdownText;
+        }
+
+        // Initial updates
+        let currentTime = updateCurrentTime();
+        calculateFiveOClockLocations(currentTime);
+        updateCountdownToFivePM();
+
+        // Set interval to update countdown every second
+        setInterval(updateCountdownToFivePM, 1000);
+        
+        // Set interval to update time and locations every minute
+        setInterval(() => {
+            currentTime = updateCurrentTime();
+            calculateFiveOClockLocations(currentTime);
+        }, 60000);
+    </script>
+</body>
+</html>
