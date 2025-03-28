@@ -1113,6 +1113,44 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTimezoneHighlighting(svgElement);
     }, 60000);
 });
+// Function to update only the UTC time display
+function updateLiveUTCTime() {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    const utcMinutes = now.getUTCMinutes();
+    const utcSeconds = now.getUTCSeconds();
+    
+    // Format with leading zeros
+    const formattedTime = `${String(utcHour).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')}:${String(utcSeconds).padStart(2, '0')}`;
+    
+    // Update the UTC time element
+    const utcTimeElement = document.getElementById('map-current-utc');
+    if (utcTimeElement) {
+        utcTimeElement.textContent = formattedTime;
+    }
+}
+
+// Set up a separate interval to update UTC time every second+
+setInterval(updateLiveUTCTime, 1000);
+
+// Function to update only the current local time display (top of the page)
+function updateLiveCurrentTime() {
+    const now = new Date();
+    
+    // Format the local time in a readable way with seconds
+    const formattedTime = now.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true 
+    });
+    
+    // Update DOM
+    document.getElementById('current-time').textContent = formattedTime;
+}
+
+// Set up a separate interval to update the current time every second
+setInterval(updateLiveCurrentTime, 1000);
 	</script>
 </body>
 </html>
